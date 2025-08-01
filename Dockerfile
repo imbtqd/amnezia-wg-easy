@@ -42,6 +42,9 @@ RUN apk add --no-cache \
 # Set Environment
 ENV DEBUG=Server,WireGuard
 
+# Create WireGuard config directory
+RUN mkdir -p /etc/amnezia/amneziawg
+
 # Run Web UI
 WORKDIR /app
 CMD ["/usr/bin/dumb-init", "node", "server.js"]

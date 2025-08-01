@@ -6,7 +6,7 @@ on:
       test_only:
         description: 'Test only (do not update)'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 jobs:
@@ -34,6 +34,9 @@ jobs:
 
       - name: Test the built image
         run: |
+          # Create test directory for WireGuard config
+          mkdir -p /tmp/test-wg-config
+          
           # Test basic functionality
           docker run --rm --name test-container \
             --device=/dev/net/tun:/dev/net/tun \
@@ -41,25 +44,32 @@ jobs:
             --cap-add=SYS_MODULE \
             --sysctl="net.ipv4.conf.all.src_valid_mark=1" \
             --sysctl="net.ipv4.ip_forward=1" \
+            -v /tmp/test-wg-config:/etc/amnezia/amneziawg \
             -p 51820:51820/udp \
             -p 51821:51821/tcp \
             -e WG_HOST=127.0.0.1 \
             -e PASSWORD=test123 \
             -e LANGUAGE=ru \
+            -e WG_PATH=/etc/amnezia/amneziawg \
             amnezia-wg-easy-test &
           
           # Wait for container to start
-          sleep 10
+          sleep 15
           
           # Check if container is running
           if docker ps | grep -q test-container; then
             echo "✅ Container started successfully"
+            
+            # Wait a bit more for web interface
+            sleep 5
             
             # Test web interface (basic check)
             if curl -s http://localhost:51821 > /dev/null; then
               echo "✅ Web interface is accessible"
             else
               echo "❌ Web interface not accessible"
+              echo "Container logs:"
+              docker logs test-container
               exit 1
             fi
             
@@ -67,6 +77,8 @@ jobs:
             docker stop test-container
           else
             echo "❌ Container failed to start"
+            echo "Container logs:"
+            docker logs test-container || echo "No logs available"
             exit 1
           fi
 
@@ -129,7 +141,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8
+          platforms: linux/amd64,linux/arm64
           tags: ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:latest, ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:3
 
       - name: Create update report

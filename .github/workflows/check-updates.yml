@@ -13,10 +13,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Get current base image digest
         id: current
         run: |
-          CURRENT_DIGEST=$(docker manifest inspect amneziavpn/amneziawg-go:latest --format '{{.Descriptor.digest}}')
+          CURRENT_DIGEST=$(docker manifest inspect amneziavpn/amneziawg-go:latest | jq -r '.manifests[0].digest')
           echo "current_digest=$CURRENT_DIGEST" >> $GITHUB_OUTPUT
           echo "Current digest: $CURRENT_DIGEST"
 
@@ -26,7 +29,7 @@ jobs:
       - name: Get latest base image digest
         id: latest
         run: |
-          LATEST_DIGEST=$(docker manifest inspect amneziavpn/amneziawg-go:latest --format '{{.Descriptor.digest}}')
+          LATEST_DIGEST=$(docker manifest inspect amneziavpn/amneziawg-go:latest | jq -r '.manifests[0].digest')
           echo "latest_digest=$LATEST_DIGEST" >> $GITHUB_OUTPUT
           echo "Latest digest: $LATEST_DIGEST"
 
