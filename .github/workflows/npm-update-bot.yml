@@ -13,9 +13,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          repository: spcfox/amnezia-wg-easy
-          ref: master
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

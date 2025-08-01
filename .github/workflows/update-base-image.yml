@@ -1,0 +1,162 @@
+name: Update Base Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_only:
+        description: 'Test only (do not update)'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  test-update:
+    name: Test Base Image Update
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Pull latest base image
+        run: docker pull amneziavpn/amneziawg-go:latest
+
+      - name: Build with latest base image
+        id: build
+        run: |
+          docker build -t amnezia-wg-easy-test .
+          echo "build_success=true" >> $GITHUB_OUTPUT
+
+      - name: Test the built image
+        run: |
+          # Test basic functionality
+          docker run --rm --name test-container \
+            --device=/dev/net/tun:/dev/net/tun \
+            --cap-add=NET_ADMIN \
+            --cap-add=SYS_MODULE \
+            --sysctl="net.ipv4.conf.all.src_valid_mark=1" \
+            --sysctl="net.ipv4.ip_forward=1" \
+            -p 51820:51820/udp \
+            -p 51821:51821/tcp \
+            -e WG_HOST=127.0.0.1 \
+            -e PASSWORD=test123 \
+            -e LANGUAGE=ru \
+            amnezia-wg-easy-test &
+          
+          # Wait for container to start
+          sleep 10
+          
+          # Check if container is running
+          if docker ps | grep -q test-container; then
+            echo "✅ Container started successfully"
+            
+            # Test web interface (basic check)
+            if curl -s http://localhost:51821 > /dev/null; then
+              echo "✅ Web interface is accessible"
+            else
+              echo "❌ Web interface not accessible"
+              exit 1
+            fi
+            
+            # Stop test container
+            docker stop test-container
+          else
+            echo "❌ Container failed to start"
+            exit 1
+          fi
+
+      - name: Create test report
+        if: steps.build.outputs.build_success == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const testOnly = '${{ github.event.inputs.test_only }}' === 'true';
+            
+            if (testOnly) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: '✅ Base image update test successful',
+                body: `## Test Results
+                
+                ✅ **Build successful** with latest base image
+                ✅ **Container starts** correctly
+                ✅ **Web interface** is accessible
+                ✅ **Basic functionality** works
+                
+                ### Next steps:
+                1. Review the test results
+                2. If satisfied, run the update workflow without test_only flag
+                3. Monitor for any issues after deployment
+                
+                ---
+                *This test was automatically performed by GitHub Actions*`,
+                labels: ['base-image-update', 'test-success']
+              });
+            } else {
+              // Update the Dockerfile or trigger rebuild
+              console.log('Proceeding with actual update...');
+            }
+
+  update-if-approved:
+    name: Update Base Image
+    needs: test-update
+    if: github.event.inputs.test_only != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push updated image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8
+          tags: ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:latest, ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:3
+
+      - name: Create update report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚀 Base image updated successfully',
+              body: `## Update Completed
+              
+              ✅ **Base image updated** to latest version
+              ✅ **New Docker image built** and pushed
+              ✅ **All platforms supported** (amd64, arm/v6, arm/v7, arm64/v8)
+              
+              ### New image available:
+              - \`ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:latest\`
+              - \`ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:3\`
+              
+              ### To deploy:
+              \`\`\`bash
+              docker pull ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:latest
+              docker-compose up -d
+              \`\`\`
+              
+              ---
+              *This update was automatically performed by GitHub Actions*`,
+              labels: ['base-image-update', 'update-success']
+            }); 
