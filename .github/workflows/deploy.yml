@@ -16,6 +16,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install jq
+      run: sudo apt-get update && sudo apt-get install -y jq
+
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
 
@@ -30,11 +33,17 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Set environment variables
-      run: echo RELEASE=$(cat ./src/package.json | jq -r .release) >> $GITHUB_ENV
+      id: vars
+      run: echo "RELEASE=$(cat ./src/package.json | jq -r .release)" >> $GITHUB_OUTPUT
 
+    - name: Check available platforms
+      run: |
+        echo "Checking available platforms for amneziavpn/amneziawg-go:latest..."
+        docker manifest inspect amneziavpn/amneziawg-go:latest | jq -r '.manifests[].platform' || echo "Failed to inspect manifest"
+    
     - name: Build & Publish Docker Image
       uses: docker/build-push-action@v6
       with:
         push: true
-        platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64/v8
-        tags: ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:latest, ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:${{ env.RELEASE }}
+        platforms: linux/amd64
+        tags: ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:latest, ghcr.io/${{ github.repository_owner }}/amnezia-wg-easy:${{ steps.vars.outputs.RELEASE }}
