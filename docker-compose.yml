@@ -1,5 +1,4 @@
-volumes:
-  etc_amneziawg:
+version: '3.8'
 
 services:
   amnezia-wg-easy:
