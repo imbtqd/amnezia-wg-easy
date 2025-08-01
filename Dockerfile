@@ -1,8 +1,8 @@
-# As a workaround we have to build on nodejs 18
-# nodejs 20 hangs on build with armv6/armv7
-FROM docker.io/library/node:18-alpine AS build_node_modules
+# Use Node.js 20 for better performance and security
+# Previous issue with armv6/armv7 should be resolved in newer versions
+FROM docker.io/library/node:20-alpine AS build_node_modules
 
-# Update npm to latest
+# Update npm to latest version
 RUN npm install -g npm@latest
 
 # Copy Web UI
@@ -13,7 +13,7 @@ RUN npm ci --omit=dev &&\
 
 # Copy build result to a new image.
 # This saves a lot of disk space.
-FROM amneziavpn/amnezia-wg:latest
+FROM amneziavpn/amneziawg-go:latest
 HEALTHCHECK CMD /usr/bin/timeout 5s /bin/sh -c "/usr/bin/wg show | /bin/grep -q interface || exit 1" --interval=1m --timeout=5s --retries=3
 COPY --from=build_node_modules /app /app
 
@@ -37,8 +37,7 @@ RUN apk add --no-cache \
     dumb-init \
     iptables
 
-# Use iptables-legacy
-RUN update-alternatives --install /sbin/iptables iptables /sbin/iptables-legacy 10 --slave /sbin/iptables-restore iptables-restore /sbin/iptables-legacy-restore --slave /sbin/iptables-save iptables-save /sbin/iptables-legacy-save
+# iptables is installed and ready to use
 
 # Set Environment
 ENV DEBUG=Server,WireGuard

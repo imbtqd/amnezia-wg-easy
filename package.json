@@ -1,7 +1,13 @@
 {
+  "name": "amnezia-wg-easy",
   "version": "1.0.0",
+  "description": "Enhanced fork of amnezia-wg-easy with amneziawg-go",
   "scripts": {
     "build": "DOCKER_BUILDKIT=1 docker build --tag amnezia-wg-easy .",
-    "start": "docker run --env WG_HOST=0.0.0.0 --name amnezia-wg-easy --device=/dev/net/tun:/dev/net/tun --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --mount type=bind,source=\"$(pwd)\"/config,target=/etc/wireguard -p 51820:51820/udp -p 51821:51821/tcp amnezia-wg-easy"
-  }
+    "start": "docker run --rm -it --name amnezia-wg-easy --device=/dev/net/tun:/dev/net/tun --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --sysctl=\"net.ipv4.ip_forward=1\" -v ~/.amnezia-wg-easy:/etc/amnezia/amneziawg -p 51820:51820/udp -p 51821:51821/tcp amnezia-wg-easy",
+    "dev": "docker run --rm -it --name amnezia-wg-easy-dev --device=/dev/net/tun:/dev/net/tun --cap-add=NET_ADMIN --cap-add=SYS_MODULE --sysctl=\"net.ipv4.conf.all.src_valid_mark=1\" --sysctl=\"net.ipv4.ip_forward=1\" -v ~/.amnezia-wg-easy:/etc/amnezia/amneziawg -p 51820:51820/udp -p 51821:51821/tcp -e LANGUAGE=ru -e WG_HOST=127.0.0.1 -e PASSWORD=test123 amnezia-wg-easy"
+  },
+  "keywords": ["wireguard", "vpn", "amnezia", "docker"],
+  "author": "IMBT",
+  "license": "GPL"
 }

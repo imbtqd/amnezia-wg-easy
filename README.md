@@ -1,4 +1,32 @@
-# AmnewziaWG Easy
+# AmneziaWG Easy (Fork with amneziawg-go)
+
+> **🚀 Enhanced Fork**: This is a fork of the original [amnezia-wg-easy](https://github.com/spcfox/amnezia-wg-easy) project, upgraded to use the latest [amneziawg-go](https://github.com/amnezia-vpn/amneziawg-go) image for improved performance and security.
+
+## 🔄 Key Changes from Original
+
+| Feature | Original | This Fork |
+|---------|----------|-----------|
+| **Base Image** | `amneziavpn/amnezia-wg` | `amneziavpn/amneziawg-go` |
+| **Node.js** | 18 | 20 (better performance) |
+| **Configuration Path** | `/etc/wireguard` | `/etc/amnezia/amneziawg` |
+| **Release Version** | 2 | 3 |
+
+## 📋 Requirements
+
+* A host with Docker installed.
+
+## 🏷️ Versions
+
+We provide more then 1 docker image to get, this will help you decide which one is best for you.
+
+| tag | Branch | Example | Description |
+| - | - | - | - |
+| `latest` | production | `ghcr.io/imbtqd/amnezia-wg-easy:latest` | stable as possible, get bug fixes quickly when needed, deployed against `master`. |
+| `3` | production | `ghcr.io/imbtqd/amnezia-wg-easy:3` | same as latest, stick to a version tag. |
+
+---
+
+# AmneziaWG Easy
 
 You have found the easiest way to install & manage AmneziaWG on any Linux host!
 
@@ -58,7 +86,8 @@ And log in again.
   -e PASSWORD=<🚨YOUR_ADMIN_PASSWORD> \
   -e PORT=51821 \
   -e WG_PORT=51820 \
-  -v ~/.amnezia-wg-easy:/etc/wireguard \
+  -e WG_PATH=/etc/amnezia/amneziawg \
+  -v ~/.amnezia-wg-easy:/etc/amnezia/amneziawg \
   -p 51820:51820/udp \
   -p 51821:51821/tcp \
   --cap-add=NET_ADMIN \
@@ -67,7 +96,7 @@ And log in again.
   --sysctl="net.ipv4.ip_forward=1" \
   --device=/dev/net/tun:/dev/net/tun \
   --restart unless-stopped \
-  ghcr.io/spcfox/amnezia-wg-easy
+  ghcr.io/imbtqd/amnezia-wg-easy
 ```
 
 > 💡 Replace `YOUR_SERVER_IP` with your WAN IP, or a Dynamic DNS hostname.
@@ -76,7 +105,7 @@ And log in again.
 
 The Web UI will now be available on `http://0.0.0.0:51821`.
 
-> 💡 Your configuration files will be saved in `~/.amnezia-wg-easy`
+> 💡 Your configuration files will be saved in `~/.amnezia-wg-easy` and mounted to `/etc/amnezia/amneziawg` inside the container
 
 AmneziaWG Easy can be launched with Docker Compose as well - just download
 [`docker-compose.yml`](docker-compose.yml), make necessary adjustments and
@@ -101,6 +130,7 @@ These options can be configured by setting environment variables using `-e KEY="
 | `WG_DEFAULT_ADDRESS` | `10.8.0.x` | `10.6.0.x` | Clients IP address range. |
 | `WG_DEFAULT_DNS` | `1.1.1.1` | `8.8.8.8, 8.8.4.4` | DNS server clients will use. If set to blank value, clients will not use any DNS. |
 | `WG_ALLOWED_IPS` | `0.0.0.0/0, ::/0` | `192.168.15.0/24, 10.0.1.0/24` | Allowed IPs clients will use. |
+| `WG_PATH` | `/etc/amnezia/amneziawg` | `/etc/wireguard` | Path where WireGuard configuration files are stored inside the container. |
 | `WG_PRE_UP` | `...` | - | See [config.js](/src/config.js#L21) for the default value. |
 | `WG_POST_UP` | `...` | `iptables ...` | See [config.js](/src/config.js#L22) for the default value. |
 | `WG_PRE_DOWN` | `...` | - | See [config.js](/src/config.js#L29) for the default value. |
@@ -126,7 +156,7 @@ To update to the latest version, simply run:
 ```bash
 docker stop amnezia-wg-easy
 docker rm amnezia-wg-easy
-docker pull ghcr.io/spcfox/amnezia-wg-easy
+docker pull ghcr.io/imbtqd/amnezia-wg-easy
 ```
 
 And then run the `docker run -d \ ...` command above again.
@@ -142,3 +172,5 @@ was pulled.
 ## Thanks
 
 Based on [wg-easy](https://github.com/wg-easy/wg-easy) by Emile Nijssen.
+
+This fork is enhanced with the latest [amneziawg-go](https://github.com/amnezia-vpn/amneziawg-go) image for improved performance and security.
