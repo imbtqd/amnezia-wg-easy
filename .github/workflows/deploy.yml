@@ -42,7 +42,7 @@ jobs:
         docker manifest inspect amneziavpn/amneziawg-go:latest | jq -r '.manifests[].platform' || echo "Failed to inspect manifest"
     
     - name: Build & Publish Docker Image
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         push: true
         platforms: linux/amd64
